@@ -1,0 +1,552 @@
+import dash  
+import math
+import numpy
+import dash_bootstrap_components as dbc
+from dash.dependencies import Input, Output, State
+import dash_table
+import dash_core_components as dcc
+import dash_html_components as html
+import plotly.express as px
+import pandas as pd
+from dash_table.Format import Format, Group, Scheme, Symbol
+from dash.exceptions import PreventUpdate
+from collections import OrderedDict
+
+
+
+
+def init_gcwCi(server):
+    dash_app = dash.Dash(
+        server=server,
+        routes_pathname_prefix='/gcwCi/',
+        prevent_initial_callbacks=False,
+        external_stylesheets=[dbc.themes.SANDSTONE]
+        )
+
+
+    # -------------------------------------------------------------------------------------
+    # Import the cleaned data (importing csv into pandas)
+    df = pd.read_csv("PlantPhyto/gcwCi/Example.csv")
+
+    # Creating an ID column name gives us more interactive capabilities
+    df['id'] = df['id']
+    df.set_index('id', inplace=True, drop=False)
+
+    # -------------------------------------------------------------------------------------
+    # App layout
+    TableACi_raw =(
+    dash_table.DataTable(
+            css=([{'selector': '.row', 'rule': 'margin: 0'},{"selector": ".Select-menu-outer", "rule": "display: block !important"}]),#
+            id='Gas_raw',
+            columns=[
+                {"name": ["","id"], "id": "id", "deletable": False, "selectable": False, "hideable": False, "editable": False},                
+                {"name": ["µmol m⁻² s⁻¹","A"], "id": "A", "deletable": False, "selectable": False, "hideable": False, 'type': 'numeric', "editable": True, 'format': Format(precision=1,scheme=Scheme.fixed)},
+                {"name": ["mol m⁻² s⁻¹","E"], "id": "E", "deletable": False, "selectable": False, "hideable": False, 'type': 'numeric', "editable": True, 'format': Format(precision=5,scheme=Scheme.fixed)},
+                {"name": ["mol m⁻² s⁻¹","gbw"], "id": "gbw", "deletable": False, "selectable": False, "hideable": False, 'type': 'numeric', "editable": True, 'format': Format(precision=1,scheme=Scheme.fixed)},
+                {"name": ["°C","Leaf temp."], "id": "Tleaf", "deletable": False, "selectable": False, "hideable": False, 'type': 'numeric', "editable": True, 'format': Format(precision=1,scheme=Scheme.fixed)},
+                {"name": ["kPa","Pa"], "id": "Pa", "deletable": False, "selectable": False, "hideable": False, 'type': 'numeric', "editable": True,'format': Format(precision=1,scheme=Scheme.fixed)},
+                {"name": ["mmol mol⁻¹","wa"], "id": "wa", "deletable": False, "selectable": False, "hideable": False, 'type': 'numeric', "editable": True, 'format': Format(precision=1,scheme=Scheme.fixed)},
+                {"name": ["µmol mol⁻¹","Ca"], "id": "Ca", "deletable": False, "selectable": False, "hideable": False, 'type': 'numeric', "editable": True,'format': Format(precision=1,scheme=Scheme.fixed)},
+                {'name': ['','Stable'],'id': 'lim', 'presentation': 'dropdown'},
+            ],
+            data=df.to_dict('records'),  # the contents of the table
+            editable=True,              # allow editing of data inside all cells
+            dropdown={
+                'lim':{
+                    'options':[
+                        {'label': 'No', 'value': 'EXC'},
+                        {'label': 'Yes', 'value': 'INC'},
+                    ], 'clearable':True,
+                }
+            },
+            filter_action="none",     # allow filtering of data by user ('native') or not ('none')
+            sort_action="native",       # enables data to be sorted per-column by user or not ('none')
+            sort_mode="single",         # sort across 'multi' or 'single' columns
+            column_selectable=False,  # allow users to select 'multi' or 'single' columns
+            row_selectable=False,     # allow users to select 'multi' or 'single' rows
+            row_deletable=True,         # choose if user can delete a row (True) or not (False)
+            selected_columns=[],        # ids of columns that user selects
+            selected_rows=[],           # indices of rows that user selects
+            page_action="none",       # all data is passed to the table up-front or not ('none')
+            page_current=0,             # page number that user is on
+            page_size=100,         # page_size: number of rows visible per page
+            fixed_rows={'headers': True},
+            style_table={
+                'overflowX': 'auto',
+                'height': '600px',
+                'overflowY': 'auto',
+
+            },
+            style_cell={                # ensure adequate header width when text is shorter than cell's text
+                'backgroundColor': 'rgb(255, 255, 255)',
+                'color': 'black'
+            },
+            style_cell_conditional=[    # align text columns to left. By default they are aligned to right
+                {'if': {'column_id': 'id'},
+                 'width': '30px'},
+                {'if': {'column_id': 'lim'},
+                 'width': '40px'},
+                {'if': {'column_id': 'A'},
+                 'width': '50px'},
+                {'if': {'column_id': 'E'},
+                 'width': '50px'},
+                {'if': {'column_id': 'gbw'},
+                 'width': '50px'},
+                {'if': {'column_id': 'Tleaf'},
+                 'width': '50px'},
+                 {'if': {'column_id': 'Pa'},
+                 'width': '50px'},
+                {'if': {'column_id': 'wa'},
+                 'width': '50px'},
+                {'if': {'column_id': 'Ca'},
+                 'width': '50px'},
+            ],
+            style_data={                # overflow cells' content into multiple lines
+                'whiteSpace': 'normal',
+                'height': 'auto',
+                'border': '1px solid black' 
+            },
+            style_data_conditional=[
+                {
+                    'if': {'row_index': 'odd'},
+                    'backgroundColor': 'rgb(248, 248, 248)'
+                },
+                {
+                    'if': {'column_editable': False},
+                    'backgroundColor': 'rgb(50, 50, 50)',
+                    'color': 'white',
+                    'cursor': 'not-allowed'
+                }
+            ],
+            style_header={
+            'backgroundColor': '#93c54b',
+            'fontWeight': 'bold',
+            'color': 'white',
+            'border': '1px solid black'
+            },
+            style_header_conditional=[
+            {
+            'if': {'column_editable': False},
+            'backgroundColor': '#93c54b',
+            'color': 'white'
+            }
+            ],
+        )
+
+        )
+    
+    dash_app.layout = html.Div([
+        html.Br(),
+
+        html.Div([
+            dbc.Jumbotron(
+            [
+            html.H1([html.I('g'),html.Sub('cw'),html.I(' C'),html.Sub('i')], className="card-title",style={'textAlign': 'center'}),
+            html.P('v. 1.0.0. Designed and developed by Diego Márquez',style={'textAlign': 'center'}),
+            html.P(['The basis of the calculations used in this app are presented in ',html.A('Márquez, Stuart-Williams, Farquhar and Busch (2021)',href='#', target='_blank')],style={'textAlign': 'center'}),
+            dbc.Container([
+                 dbc.Card([
+                    dbc.CardHeader(html.H4("Instructions", className="card-title",style={'textAlign': 'center'})),                
+                        dbc.CardBody([
+                            html.H5(html.Em('The app uses the raw data of water (H₂O) and carbon dioxide (CO₂) measurements from a leaf gas exchange device to estimate leaf cuticular conductance to water.'),style={'textAlign': 'center'}),
+                            dbc.Col(
+                                dbc.Card([
+                                    dbc.CardBody([
+                                        dbc.Row(html.P([html.Strong('1- '),'Copy your data from your spreadsheet.'])),
+                                        dbc.Row(html.P([html.Strong('2- '),'Paste the data into the app "Raw data spreadsheet".'])),
+                                        dbc.Row(html.P([html.Strong('3- '),'Deffine stable measurements.'])),
+                                        dbc.Row(html.P([html.Strong('4- '),'Assign a 1.5×Γ* (Cᵢ) and β.'])),                                        
+                                        dbc.Row(html.P([html.Strong('5- '),'Press "CALCULATE PARAMETERS" button.'])),                                        
+                                        dbc.Col(dbc.Button("See definitions and recommendations", id='SeeMore', n_clicks=0, outline=False, color="primary", className="mr-1", style={'text-transform': 'inherit', 'font-size': '14px'}),style={'textAlign': 'center'}),
+                                        ])
+                                    ], color="success", inverse=True),width={"size": 6, "offset": 3},
+                                ),
+                            html.Br(),
+                            dbc.Collapse([
+                                dbc.Row([
+                                    dbc.Col([dbc.Card([
+                                        dbc.CardBody([                                    
+                                        dbc.Row(html.H5([html.Strong('Some recommendations:')])),
+                                        dbc.Row(html.P(['~ To see an example of how the results looks like, press "APPLY QUICK SELECTION" and then "CALCULATE PARAMETERS" with the pre-loaded example information in the "Raw data spreadsheet".'])),                                
+                                        dbc.Row(html.P(['~ Column "assign limitation" is a selection box. You can paste that column but the values MUST match with one of the selectable options.'])),
+                                        dbc.Row(html.P(['~ Column "id" is self-assigned, so you do not need to (cannot) paste that column.'])),            
+                                        dbc.Row(html.P(['~ It is recommended to empty the "Raw data spreadsheet" pressing the "CLEAN DATA TABLE" button before to paste new data; however, it is not mandatory. If you do not want to clean the spreadsheet, check that there are not extra or unwanted rows remaining in the spreadsheet.'])),
+                                        dbc.Row(html.P(['~ The dynamic graphs can be downloaded in PNG format keeping your selected areas and lines from the legend.' ])),
+                                        ])
+                                        ], color="success", inverse=True),]),
+                                    dbc.Col([dbc.Card([
+                                        dbc.CardBody([
+                                        dbc.Row(html.H5('Definitions')),
+                                        dbc.Row(html.P([html.Strong('A: '),'Asimilation rate (µmol m⁻² s⁻¹).'])),
+                                        dbc.Row(html.P([html.Strong('Cᵢ: '),'Internal CO₂ concentration (ppm or µmol mol⁻¹).'])),                         
+                                        ])
+                                        ], color="success", inverse=True),
+                                    ]),
+                                ]),
+                            ], id='See_More'),                            
+                        ])
+                ], color="success", inverse=True),
+
+                html.Br(),
+
+                dbc.Card([
+                    dbc.CardHeader([html.H4("Raw data spreadsheet", className="card-title",style={'textAlign': 'center'})]),
+                    dbc.Spinner(children=[
+                        dbc.Row(dbc.Col(html.Div(TableACi_raw))),
+                        dbc.Row(dbc.Col(html.Div(dcc.Graph(id='RawData-graph', config={'editable':'True'})), align="center")),
+                        ], size="lg", color="success", type="border", fullscreen=False,),
+                ], color="success",  outline=True), #outline=True
+
+
+                dbc.Card([
+                    dbc.CardHeader([html.H5("Quick selection", className="card-title",style={'textAlign': 'center'})]),
+                        dbc.CardBody([
+                            dbc.Row([
+                                dbc.Col([
+                                    dbc.InputGroup(
+                                        [dbc.InputGroupAddon('First stable point', addon_type="prepend"),
+                                        dbc.Input(id='First', type="number", debounce=True, inputMode="numeric",value=54),
+                                        dbc.InputGroupAddon("id", addon_type="append"),                                    
+                                        ]
+                                    ),
+                                ]),
+                                dbc.Col(dbc.Button(["Apply quick selection"], id='Quick_button', n_clicks=0, color="info", className="mr-1", style={'text-transform': 'inherit', 'font-size': '14px'}),style={'textAlign': 'center'}),
+                                dbc.Col([
+                                    dbc.InputGroup(
+                                        [dbc.InputGroupAddon('Last stable point', addon_type="prepend"),
+                                        dbc.Input(id='Last', type="number", debounce=True, inputMode="numeric",value=120),
+                                        dbc.InputGroupAddon("id", addon_type="append"),                                    
+                                        ]
+                                    ),
+                                ]),                                                                
+                            ]),                            
+                        ]),
+                ], color="info",  outline=True),
+
+                html.Br(),
+
+                dbc.Card([
+                    dbc.CardHeader([html.H5("Parameters", className="card-title",style={'textAlign': 'center'})]),
+                    dbc.CardBody([
+                        dbc.Row([
+                            dbc.Col([
+                                dbc.InputGroup(
+                                    [dbc.InputGroupAddon('1.5×Γ* (Cᵢ)', addon_type="prepend"),
+                                    dbc.Input(id='Ci_cnt', type="number", debounce=True, inputMode="numeric",value=60),
+                                    dbc.InputGroupAddon("µmol mol⁻¹", addon_type="append"),                                    
+                                    ]
+                                ),
+                            ]),
+                            dbc.Col([
+                                dbc.InputGroup(
+                                    [dbc.InputGroupAddon('β', addon_type="prepend"),
+                                    dbc.Input(id='Betta', type="number", debounce=True, inputMode="numeric",value=0.04),
+                                    dbc.InputGroupAddon("(gcc/gcw)", addon_type="append"),                                    
+                                    ]
+                                ),
+                            ]),                                                            
+                        ]),
+                    ]), 
+                html.Br(),
+                ], color="success",  inverse=True),
+
+                html.Br(),
+
+                dbc.Row([
+                        dbc.Col([dbc.Button("Calculate cuticular conductance", id='Calc_button', n_clicks=0, outline=False, color="success", className="mr-1"),
+                                dbc.Button("Clean data table", id='Clean_button', n_clicks=0, outline=False, color="warning", className="mr-1")],style={'textAlign': 'center'}),
+                    ]),
+
+
+                html.Br(),
+
+                dbc.Collapse([
+                    dbc.Card([
+                        dbc.CardHeader([html.H4("Results", className="card-title",style={'textAlign': 'center'})]),
+                        dbc.CardBody([
+                            dbc.Spinner(children=[
+                                dbc.Row([
+                                dbc.Col(html.Div(dcc.Graph(id='Results-graph', config={'editable':'True'})), align="center"),
+                                ]),                            
+                                html.Br(),
+                                dbc.Col([
+                                    dbc.Row([
+                                        dbc.Table([
+                                            html.Tbody([
+                                                html.Tr([html.Td(['Average g', html.Sub('cw')]), html.Td(id='AVGgcw'),html.Td(['mmol m',html.Sup(-2),' s',html.Sup(-1)])]),
+                                                html.Tr([html.Td(['Std. Dev. g', html.Sub('cw')]), html.Td(id='SDgcw'),html.Td(['mmol m',html.Sup(-2),' s',html.Sup(-1)])]),
+                                            ]),
+                                        ], dark=True),####
+                                    ]),
+                                ],width={"size": 6, "offset": 3}),
+                            ], size="lg", color="success", type="border", fullscreen=False,),
+                        ]),
+                    ], color="success",  inverse=True),
+                ], id='Results'),       
+
+
+            ],fluid=False)]
+            )
+        ]),
+
+        html.Br(),
+
+    ])
+
+    @dash_app.callback(
+        [Output('Quick_button','n_clicks'),
+        Output('Gas_raw','data')],
+        [Input('Gas_raw','data_timestamp'),
+        Input('Quick_button','n_clicks_timestamp'),
+        Input('First','value'),
+        Input('Last','value'),
+        Input('Clean_button','n_clicks_timestamp')],
+        [State('Gas_raw','data'),
+        State('Quick_button','n_clicks'),
+        State('Clean_button','n_clicks')]
+        )
+    def Quick(rows_ts, nc_ts, First, Last, clean_st, rows, nc, clean_cn):
+        if clean_cn == 0:
+            if nc == 0:
+                i=1
+                nc = 0
+                for row in rows:
+                    try:
+                        row['id'] = i
+                        i=i+1
+                    except:
+                        row['id'] = 'NA'
+                return nc, rows
+            else:
+                i=1
+                for row in rows:
+                    nc=0
+                    try:
+                        if row['id'] >= First and row['id'] <= Last:
+                            row['lim'] = 'INC'
+                        if row['id'] < First or row['id'] > Last:
+                            row['lim'] = 'EXC'
+                        row['id'] = i
+                        i=i+1
+                    except:
+                        row['lim'] = 'EXC'
+                return nc, rows
+            return nc, rows
+        else:
+            df = pd.read_csv("PlantPhyto/gcwCi/Clean.csv")
+            data = df.to_dict('records')
+            nc=0
+            return nc, data
+        return nc, data
+
+
+    @dash_app.callback(
+        [Output('Clean_button','n_clicks'),
+        Output('Calc_button','n_clicks')],
+        [Input('Clean_button','n_clicks_timestamp'),
+        Input('Calc_button','n_clicks_timestamp')],
+        [State('Clean_button','n_clicks'),
+        State('Calc_button','n_clicks')]
+        )
+    def Clean_B(n, nc, n_clicks, Calc_b):
+        if n_clicks == 0:
+            i = 1
+        else:
+            n_clicks = 0
+            Calc_b = 0
+        return n_clicks, Calc_b
+
+    @dash_app.callback(
+        Output('RawData-graph','figure'),
+        [Input('Gas_raw','data')]
+        )
+    def RawData_graph(rows):
+        temp_df = pd.DataFrame(rows)
+        try:
+            EXC_df = temp_df[temp_df['lim']=='EXC']
+            INC_df = temp_df[temp_df['lim']=='INC']
+
+            Empty_df1 = temp_df[temp_df['lim']!='EXC']
+            Empty_df = Empty_df1[Empty_df1['lim']!='INC']
+            fig = {
+                    'data': [
+                        {'x': EXC_df['id'], 'y': EXC_df['A'], 'type': 'scatter', 'name': 'Unstable', 'mode' :'markers','marker':dict(color='FF0000',)},
+                        {'x': INC_df['id'], 'y': INC_df['A'], 'type': 'scatter', 'name': 'Stable', 'mode' :'markers','marker':dict(color='green',)},
+                        {'x': Empty_df['id'], 'y': Empty_df['A'], 'type': 'scatter', 'name': 'No assign', 'mode' :'markers','marker':dict(color='black',)},
+                    ],
+                    'layout': {
+                        'title' : 'Entered data display',
+                        'plot_bgcolor' : '#fff',
+                        'paper_bgcolor' : '#fff',
+                        'xaxis':{'title':'id', 'color':'black'},
+                        'yaxis':{'title':'A (µmol m⁻² s⁻¹)', 'color':'black'},
+                        'legend':{'title':{'text':'Condition', 'font':{'size':'12'}},'y':0.4, 'x':0.8},#,'yanchor':'bottom', 'xanchor':'left','orientation':'h'
+                        'margin':dict(
+                            l=50,
+                            r=10,
+                            b=40,
+                            t=50,
+                            pad=0
+                        ),
+                    },
+                }
+        except:
+            fig = {
+                    'data': [
+                        {'x': temp_df['id'], 'y': temp_df['A'], 'type': 'scatter', 'name': 'Raw data', 'mode' :'markers','marker':dict(color='black',)},
+                    ],
+                    'layout': {
+                        'title' : 'Entered data display',
+                        'plot_bgcolor' : '#fff',
+                        'paper_bgcolor' : '#fff',
+                        'xaxis':{'title':'id', 'color':'black'},
+                        'yaxis':{'title':'A (µmol m⁻² s⁻¹)', 'color':'black'},
+                        'margin':dict(
+                            l=50,
+                            r=10,
+                            b=40,
+                            t=50,
+                            pad=0
+                        ),
+                    },
+                }
+        return fig
+
+    #=====================================================================================================================================================
+    @dash_app.callback(
+        Output("ScFc", "is_open"),
+        [Input("Sc_fc", "n_clicks")],
+        [State("ScFc", "is_open")],
+    )
+    def ScFc_collapse(n, is_open):
+        if n:
+            return not is_open
+        return is_open
+
+    @dash_app.callback(
+        Output("See_More", "is_open"),
+        [Input("SeeMore", "n_clicks")],
+        [State("See_More", "is_open")],
+    )
+    def SeeMore_collapse(n, is_open):
+        if n:
+            return not is_open
+        return is_open
+
+    @dash_app.callback(
+        Output("Results", "is_open"),
+        [Input("Calc_button", "n_clicks")],
+        [State("Results", "is_open")],
+    )
+    def Results_collapse(n, is_open):
+        if n > 0:
+            is_open = True
+        else:
+            is_open = False
+        return is_open
+
+    @dash_app.callback(
+        [Output('Results-graph','figure'),
+        Output('AVGgcw', 'children'),
+        Output('SDgcw', 'children')],
+        [Input('Gas_raw','data'),
+        Input('Betta','value'),
+        Input('Ci_cnt','value'),
+        Input('Calc_button','n_clicks'),]
+        )
+    def Results_graph(rows, Betta, Ci_cnt, n_clicks):
+        if n_clicks == 0:
+            i=1
+            fig = {
+                        'data': [
+                            {'x': 0, 'y': 0, 'type': 'scatter', 'name': 'Raw data', 'mode' :'markers','marker':dict(color='black',)},
+                        ],
+                        'layout': {
+                            'title' : 'A-Cc curve',
+                            'plot_bgcolor' : '#fff',
+                            'paper_bgcolor' : '#fff',
+                            'xaxis':{'title':'Cc (Pa)', 'color':'black'},
+                            'yaxis':{'title':'A (µmol m⁻² s⁻¹)', 'color':'black'},
+                            'margin':dict(
+                                l=50,
+                                r=10,
+                                b=40,
+                                t=50,
+                                pad=0
+                            ),
+                        },
+                    }
+            AVGgcw = 0
+            SDgcw = 0
+            return fig, round(AVGgcw,2), round(SDgcw,2)
+        else:
+            temp_df = pd.DataFrame(rows)
+            try:                
+                INC_df = temp_df[temp_df['lim']=='INC']            
+                
+                gbw = INC_df['gbw']
+                Tleaf = INC_df['Tleaf']
+                Pa = INC_df['Pa']
+                A = INC_df['A']
+                E = INC_df['E']
+                Ca = INC_df['Ca']
+                wa = INC_df['wa']
+
+                wi = (1000*0.6136*numpy.exp(17.502*Tleaf/(240.97+Tleaf)))/(Pa)
+                Cs = (gbw/1.37*Ca-A-E/2*Ca)/(gbw/1.37+E/2)
+                ws = (E/gbw*(1-wa/wi)+wa/1000)/(1+E/(2*gbw))*1000
+                Gi = (E/(1.6*(wi-ws)/1000))*(1-(ws+wi)/2000)+E/2
+                D = (wi-ws)/1000
+                alpha = ((1-(wi+ws)/2000)/1.6)+(D/2)-Betta
+                gcw = (((Cs-Ci_cnt)*Gi-(A+Cs*E))/((Cs-Ci_cnt)*alpha-Cs*D))*1000 
+
+
+                AVGgcw = numpy.mean(gcw)
+                SDgcw = numpy.std(gcw)
+
+
+                fig = {
+                        'data': [
+                            {'x': INC_df['id'], 'y': gcw, 'type': 'scatter', 'name': 'Data rubisCO lim.', 'mode' :'markers','marker':dict(color='FF0000',)},
+                        ],
+                        'layout': {
+                            'title' : 'Cuticular conductance to water vapour',
+                            'plot_bgcolor' : '#fff',
+                            'paper_bgcolor' : '#fff',
+                            'xaxis':{'title':'id', 'color':'black'},
+                            'yaxis':{'title':'g<sub>cw</sub> (mmol m⁻² s⁻¹)', 'color':'black', 'range':[0,max(gcw)*1.1]},
+                            'legend':{'title':{'text':'Limitation', 'font':{'size':'12'}},'y':0.1, 'x':0.8},#,'yanchor':'bottom', 'xanchor':'left','orientation':'h'
+                            'margin':dict(
+                                l=50,
+                                r=10,
+                                b=40,
+                                t=50,
+                                pad=0
+                            ),
+                        },
+                    }
+            except:
+                fig = {
+                        'data': [
+                            {'x': 0, 'y': 0, 'type': 'scatter', 'name': 'Raw data', 'mode' :'markers','marker':dict(color='black',)},
+                        ],
+                        'layout': {
+                            'title' : 'Cuticular conductance',
+                            'plot_bgcolor' : '#fff',
+                            'paper_bgcolor' : '#fff',
+                            'xaxis':{'title':'id', 'color':'black'},
+                            'yaxis':{'title':'gcw (mmol m⁻² s⁻¹)', 'color':'black'},
+                            'margin':dict(
+                                l=50,
+                                r=10,
+                                b=40,
+                                t=50,
+                                pad=0
+                            ),
+                        },
+                    }
+                AVGgcw = 0
+                SDgcw = 0
+            return fig, round(AVGgcw,2), round(SDgcw,2)
+
+    return dash_app.server #=============================================Bottom
