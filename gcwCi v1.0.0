@@ -143,7 +143,7 @@ def init_gcwCi(server):
             [
             html.H1([html.I('g'),html.Sub('cw'),html.I(' C'),html.Sub('i')], className="card-title",style={'textAlign': 'center'}),
             html.P('v. 1.0.0. Designed and developed by Diego Márquez',style={'textAlign': 'center'}),
-            html.P(['The basis of the calculations used in this app are presented in ',html.A('Márquez, Stuart-Williams, Farquhar and Busch (2021)',href='#', target='_blank')],style={'textAlign': 'center'}),
+            html.P(['The basis of the calculations used in this app are presented in ',html.A('Márquez, Stuart-Williams, Farquhar and Busch (2021)',href='https://doi.org/10.1111/nph.17588', target='_blank')],style={'textAlign': 'center'}),
             dbc.Container([
                  dbc.Card([
                     dbc.CardHeader(html.H4("Instructions", className="card-title",style={'textAlign': 'center'})),                
